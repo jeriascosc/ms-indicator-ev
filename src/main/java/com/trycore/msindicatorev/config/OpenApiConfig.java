@@ -29,7 +29,8 @@ public class OpenApiConfig {
                         - Los porcentajes se expresan como fraccion entre 0.0 y 1.0 (0.75 = 75%).
                         - Los indicadores cuyo divisor es cero se devuelven como null (no calculables).
                         - Los errores siguen el formato ProblemDetail (RFC 7807).
-                        - Las representaciones incluyen enlaces hipermedia (nivel 3 de Richardson).
+                        - Las respuestas son JSON plano: los recursos individuales son objetos y las \
+                        colecciones son arrays, sin envoltorios ni enlaces hipermedia.
                         """)
                 .contact(new Contact().name("Trycore").url("https://github.com/jeriascosc/ms-indicator-ev"))
                 .license(new License().name("Apache 2.0").url("https://www.apache.org/licenses/LICENSE-2.0")));

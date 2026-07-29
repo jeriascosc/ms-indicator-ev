@@ -16,8 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -51,17 +50,19 @@ class IndicatorControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/activities/indicators devuelve los indicadores de todos los registros")
+    @DisplayName("GET /api/v1/activities/indicators devuelve un array plano con todos los registros")
     void listsIndicatorsForEveryActivity() throws Exception {
         given(activityService.findAll()).willReturn(List.of(idealActivity(), notStartedActivity()));
 
         mockMvc.perform(get("/api/v1/activities/indicators"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$..activityName", hasItem("Cimentacion")))
-                .andExpect(jsonPath("$..activityName", hasItem("Actividad no iniciada")))
-                .andExpect(jsonPath("$._links.self.href", containsString("/api/v1/activities/indicators")))
-                .andExpect(jsonPath("$._links.interpretations.href", containsString("/interpretations")))
-                .andExpect(jsonPath("$._links.activities.href", containsString("/api/v1/activities")));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].activityName").value("Cimentacion"))
+                .andExpect(jsonPath("$[1].activityName").value("Actividad no iniciada"))
+                .andExpect(jsonPath("$._links").doesNotExist())
+                .andExpect(jsonPath("$._embedded").doesNotExist());
     }
 
     @Test
@@ -81,10 +82,7 @@ class IndicatorControllerTest {
                 .andExpect(jsonPath("$.spi").value(1.2000))
                 .andExpect(jsonPath("$.eac").value(8333.3333))
                 .andExpect(jsonPath("$.vac").value(1666.6667))
-                .andExpect(jsonPath("$._links.self.href", containsString("/api/v1/activities/1/indicators")))
-                .andExpect(jsonPath("$._links.interpretation.href",
-                        containsString("/api/v1/activities/1/interpretation")))
-                .andExpect(jsonPath("$._links.activity.href", containsString("/api/v1/activities/1")));
+                .andExpect(jsonPath("$._links").doesNotExist());
     }
 
     @Test
@@ -113,16 +111,18 @@ class IndicatorControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/activities/interpretations devuelve la lectura de todos los registros")
+    @DisplayName("GET /api/v1/activities/interpretations devuelve un array plano con todos los registros")
     void listsInterpretationsForEveryActivity() throws Exception {
         given(activityService.findAll()).willReturn(List.of(idealActivity(), notStartedActivity()));
 
         mockMvc.perform(get("/api/v1/activities/interpretations"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$..cpiVsSpiAnalysis", hasItem("Proyecto ideal")))
-                .andExpect(jsonPath("$..cpiVsSpiAnalysis", hasItem("No calculable")))
-                .andExpect(jsonPath("$._links.self.href", containsString("/api/v1/activities/interpretations")))
-                .andExpect(jsonPath("$._links.indicators.href", containsString("/api/v1/activities/indicators")));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].cpiVsSpiAnalysis").value("Proyecto ideal"))
+                .andExpect(jsonPath("$[1].cpiVsSpiAnalysis").value("No calculable"))
+                .andExpect(jsonPath("$._links").doesNotExist());
     }
 
     @Test
@@ -138,10 +138,7 @@ class IndicatorControllerTest {
                 .andExpect(jsonPath("$.cpiStatus").value("Eficiencia de Costo"))
                 .andExpect(jsonPath("$.spiStatus").value("Avanza más de lo previsto"))
                 .andExpect(jsonPath("$.cpiVsSpiAnalysis").value("Proyecto ideal"))
-                .andExpect(jsonPath("$._links.self.href",
-                        containsString("/api/v1/activities/1/interpretation")))
-                .andExpect(jsonPath("$._links.indicators.href",
-                        containsString("/api/v1/activities/1/indicators")));
+                .andExpect(jsonPath("$._links").doesNotExist());
     }
 
     @Test

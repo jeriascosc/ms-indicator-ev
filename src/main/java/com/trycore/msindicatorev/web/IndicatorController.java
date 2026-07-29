@@ -11,9 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.MediaTypes;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,14 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-
 /**
  * Sub-recursos de calculo sobre las actividades: indicadores EVM y su interpretacion de negocio.
  */
 @RestController
-@RequestMapping(path = "/api/v1/activities", produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
+@RequestMapping(path = "/api/v1/activities", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Indicators", description = "Indicadores de Earned Value Management y su interpretacion")
 public class IndicatorController {
 
@@ -49,13 +44,8 @@ public class IndicatorController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Indicadores calculados para todos los registros")
     })
-    public ResponseEntity<CollectionModel<IndicatorResponse>> indicatorsForAll() {
-        List<IndicatorResponse> indicators = indicatorService.calculateAll(activityService.findAll());
-
-        return ResponseEntity.ok(CollectionModel.of(indicators,
-                linkTo(methodOn(IndicatorController.class).indicatorsForAll()).withSelfRel(),
-                linkTo(methodOn(IndicatorController.class).interpretationsForAll()).withRel("interpretations"),
-                linkTo(methodOn(ActivityController.class).findAll()).withRel("activities")));
+    public ResponseEntity<List<IndicatorResponse>> indicatorsForAll() {
+        return ResponseEntity.ok(indicatorService.calculateAll(activityService.findAll()));
     }
 
     @GetMapping("/{id}/indicators")
@@ -67,16 +57,10 @@ public class IndicatorController {
                     content = @Content(mediaType = "application/problem+json",
                             schema = @Schema(implementation = ProblemDetail.class)))
     })
-    public ResponseEntity<EntityModel<IndicatorResponse>> indicatorsByActivity(
+    public ResponseEntity<IndicatorResponse> indicatorsByActivity(
             @Parameter(description = "Identificador de la actividad", example = "1")
             @PathVariable Long id) {
-
-        IndicatorResponse indicators = indicatorService.calculate(activityService.findById(id));
-
-        return ResponseEntity.ok(EntityModel.of(indicators,
-                linkTo(methodOn(IndicatorController.class).indicatorsByActivity(id)).withSelfRel(),
-                linkTo(methodOn(IndicatorController.class).interpretationByActivity(id)).withRel("interpretation"),
-                linkTo(methodOn(ActivityController.class).findById(id)).withRel("activity")));
+        return ResponseEntity.ok(indicatorService.calculate(activityService.findById(id)));
     }
 
     @GetMapping("/interpretations")
@@ -86,14 +70,8 @@ public class IndicatorController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Interpretacion generada para todos los registros")
     })
-    public ResponseEntity<CollectionModel<InterpretationResponse>> interpretationsForAll() {
-        List<InterpretationResponse> interpretations =
-                indicatorService.interpretAll(activityService.findAll());
-
-        return ResponseEntity.ok(CollectionModel.of(interpretations,
-                linkTo(methodOn(IndicatorController.class).interpretationsForAll()).withSelfRel(),
-                linkTo(methodOn(IndicatorController.class).indicatorsForAll()).withRel("indicators"),
-                linkTo(methodOn(ActivityController.class).findAll()).withRel("activities")));
+    public ResponseEntity<List<InterpretationResponse>> interpretationsForAll() {
+        return ResponseEntity.ok(indicatorService.interpretAll(activityService.findAll()));
     }
 
     @GetMapping("/{id}/interpretation")
@@ -106,15 +84,9 @@ public class IndicatorController {
                     content = @Content(mediaType = "application/problem+json",
                             schema = @Schema(implementation = ProblemDetail.class)))
     })
-    public ResponseEntity<EntityModel<InterpretationResponse>> interpretationByActivity(
+    public ResponseEntity<InterpretationResponse> interpretationByActivity(
             @Parameter(description = "Identificador de la actividad", example = "1")
             @PathVariable Long id) {
-
-        InterpretationResponse interpretation = indicatorService.interpret(activityService.findById(id));
-
-        return ResponseEntity.ok(EntityModel.of(interpretation,
-                linkTo(methodOn(IndicatorController.class).interpretationByActivity(id)).withSelfRel(),
-                linkTo(methodOn(IndicatorController.class).indicatorsByActivity(id)).withRel("indicators"),
-                linkTo(methodOn(ActivityController.class).findById(id)).withRel("activity")));
+        return ResponseEntity.ok(indicatorService.interpret(activityService.findById(id)));
     }
 }
