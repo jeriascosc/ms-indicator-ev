@@ -122,6 +122,7 @@ public class IndicatorService {
         if (cpi == null || spi == null) {
             return NOT_COMPUTABLE;
         }
+        // compareTo devuelve -1, 0 o 1: hay que contrastar contra 0, no contra 1.
         int cpiComparison = cpi.compareTo(BigDecimal.ONE);
         int spiComparison = spi.compareTo(BigDecimal.ONE);
 

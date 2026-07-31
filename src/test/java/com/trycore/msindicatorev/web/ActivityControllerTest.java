@@ -5,12 +5,10 @@ import com.trycore.msindicatorev.domain.Activity;
 import com.trycore.msindicatorev.service.ActivityService;
 import com.trycore.msindicatorev.web.dto.ActivityRequest;
 import com.trycore.msindicatorev.web.error.ActivityNotFoundException;
-import com.trycore.msindicatorev.web.hateoas.ActivityModelAssembler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -20,7 +18,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -37,7 +35,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ActivityController.class)
-@Import(ActivityModelAssembler.class)
 class ActivityControllerTest {
 
     @Autowired
@@ -64,34 +61,34 @@ class ActivityControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/activities devuelve 200 con la coleccion y sus enlaces")
+    @DisplayName("GET /api/v1/activities devuelve 200 con un array JSON plano")
     void listsActivities() throws Exception {
         given(activityService.findAll()).willReturn(List.of(storedActivity()));
 
         mockMvc.perform(get("/api/v1/activities"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded").exists())
-                .andExpect(jsonPath("$..name", hasItem("Cimentacion")))
-                .andExpect(jsonPath("$._links.self.href", containsString("/api/v1/activities")))
-                .andExpect(jsonPath("$._links.indicators.href", containsString("/indicators")))
-                .andExpect(jsonPath("$._links.interpretations.href", containsString("/interpretations")));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].name").value("Cimentacion"))
+                .andExpect(jsonPath("$[0]._links").doesNotExist())
+                .andExpect(jsonPath("$._embedded").doesNotExist());
     }
 
     @Test
-    @DisplayName("GET /api/v1/activities/{id} devuelve 200 con los enlaces de nivel 3")
+    @DisplayName("GET /api/v1/activities/{id} devuelve 200 con el DTO plano, sin enlaces")
     void getsActivityById() throws Exception {
         given(activityService.findById(1L)).willReturn(storedActivity());
 
         mockMvc.perform(get("/api/v1/activities/1"))
                 .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.name").value("Cimentacion"))
+                .andExpect(jsonPath("$.totalPlannedBudget").value(10000.0000))
                 .andExpect(jsonPath("$.created").value("system"))
-                .andExpect(jsonPath("$._links.self.href", containsString("/api/v1/activities/1")))
-                .andExpect(jsonPath("$._links.indicators.href", containsString("/api/v1/activities/1/indicators")))
-                .andExpect(jsonPath("$._links.interpretation.href",
-                        containsString("/api/v1/activities/1/interpretation")))
-                .andExpect(jsonPath("$._links.activities.href", containsString("/api/v1/activities")));
+                .andExpect(jsonPath("$._links").doesNotExist());
     }
 
     @Test
@@ -127,7 +124,8 @@ class ActivityControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", containsString("/api/v1/activities/1")))
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$._links.self.href", containsString("/api/v1/activities/1")));
+                .andExpect(jsonPath("$.created").value("system"))
+                .andExpect(jsonPath("$._links").doesNotExist());
 
         verify(activityService).create(any(ActivityRequest.class), eq("jeriasco"));
     }
@@ -196,7 +194,7 @@ class ActivityControllerTest {
                         .content(objectMapper.writeValueAsString(validRequest())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$._links.self.href", containsString("/api/v1/activities/1")));
+                .andExpect(jsonPath("$._links").doesNotExist());
     }
 
     @Test

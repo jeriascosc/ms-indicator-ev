@@ -89,7 +89,10 @@ class MsIndicatorEvApplicationTests {
 
         URI location = created.getHeaders().getLocation();
         assertThat(location).isNotNull();
-        assertThat(created.getBody()).contains("\"created\":\"jeriasco\"").contains("_links");
+        assertThat(created.getBody())
+                .contains("\"created\":\"jeriasco\"")
+                .doesNotContain("_links")
+                .doesNotContain("_embedded");
 
         // GET indicadores -> CPI y SPI de 1.2
         ResponseEntity<String> indicators =

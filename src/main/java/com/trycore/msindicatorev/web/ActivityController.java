@@ -4,7 +4,6 @@ import com.trycore.msindicatorev.domain.Activity;
 import com.trycore.msindicatorev.service.ActivityService;
 import com.trycore.msindicatorev.web.dto.ActivityRequest;
 import com.trycore.msindicatorev.web.dto.ActivityResponse;
-import com.trycore.msindicatorev.web.hateoas.ActivityModelAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,9 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.MediaTypes;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,52 +27,52 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 /**
- * CRUD de actividades expuesto como recurso REST de nivel 3 (Richardson): URIs orientadas a
- * recursos, verbos HTTP con semantica correcta, codigos de estado significativos y enlaces
- * hipermedia en cada representacion.
+ * CRUD de actividades expuesto como recurso REST: URIs orientadas a recursos, verbos HTTP con
+ * semantica correcta y codigos de estado significativos.
  */
 @RestController
-@RequestMapping(path = "/api/v1/activities", produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
+@RequestMapping(path = "/api/v1/activities", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Activities", description = "Gestion de las actividades del proyecto")
 public class ActivityController {
 
     private final ActivityService activityService;
-    private final ActivityModelAssembler assembler;
 
-    public ActivityController(ActivityService activityService, ActivityModelAssembler assembler) {
+    public ActivityController(ActivityService activityService) {
         this.activityService = activityService;
-        this.assembler = assembler;
     }
 
     @GetMapping
     @Operation(summary = "Listar actividades",
-            description = "Devuelve todas las actividades registradas, cada una con sus enlaces "
-                    + "hipermedia hacia sus indicadores e interpretacion.")
+            description = "Devuelve todas las actividades registradas.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Listado obtenido correctamente")
     })
-    public ResponseEntity<CollectionModel<EntityModel<ActivityResponse>>> findAll() {
-        return ResponseEntity.ok(assembler.toCollectionModel(activityService.findAll()));
+    public ResponseEntity<List<ActivityResponse>> findAll() {
+        List<ActivityResponse> activities = activityService.findAll().stream()
+                .map(ActivityResponse::from)
+                .toList();
+        return ResponseEntity.ok(activities);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener una actividad por id",
-            description = "Recupera una actividad concreta junto con sus enlaces hipermedia.")
+            description = "Recupera una actividad concreta a partir de su identificador.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Actividad encontrada"),
             @ApiResponse(responseCode = "404", description = "No existe una actividad con ese id",
                     content = @Content(mediaType = "application/problem+json",
                             schema = @Schema(implementation = ProblemDetail.class)))
     })
-    public ResponseEntity<EntityModel<ActivityResponse>> findById(
+    public ResponseEntity<ActivityResponse> findById(
             @Parameter(description = "Identificador de la actividad", example = "1")
             @PathVariable Long id) {
-        return ResponseEntity.ok(assembler.toModel(activityService.findById(id)));
+        return ResponseEntity.ok(ActivityResponse.from(activityService.findById(id)));
     }
 
-    @PostMapping(consumes = "application/json")
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Crear una actividad",
             description = "Registra una nueva actividad. Los porcentajes se envian como fraccion "
                     + "entre 0.0 y 1.0. La cabecera opcional X-User queda registrada en el campo de "
@@ -83,11 +80,11 @@ public class ActivityController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Actividad creada. La cabecera Location "
                     + "apunta al recurso recien creado"),
-            @ApiResponse(responseCode = "400", description = "Datos de entrada invalidos",
+            @ApiResponse(responseCode = "400", description = "Datos de entrada invalidos o cuerpo ilegible",
                     content = @Content(mediaType = "application/problem+json",
                             schema = @Schema(implementation = ProblemDetail.class)))
     })
-    public ResponseEntity<EntityModel<ActivityResponse>> create(
+    public ResponseEntity<ActivityResponse> create(
             @Valid @RequestBody ActivityRequest request,
             @Parameter(description = "Usuario que ejecuta la operacion", example = "jeriasco")
             @RequestHeader(value = "X-User", required = false) String user) {
@@ -97,30 +94,30 @@ public class ActivityController {
                 .path("/{id}")
                 .buildAndExpand(created.getId())
                 .toUri();
-        return ResponseEntity.created(location).body(assembler.toModel(created));
+        return ResponseEntity.created(location).body(ActivityResponse.from(created));
     }
 
-    @PutMapping(path = "/{id}", consumes = "application/json")
+    @PutMapping(path = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Actualizar una actividad",
             description = "Reemplaza los datos de una actividad existente. La cabecera opcional "
                     + "X-User queda registrada en el campo de auditoria 'createUpdate'.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Actividad actualizada"),
-            @ApiResponse(responseCode = "400", description = "Datos de entrada invalidos",
+            @ApiResponse(responseCode = "400", description = "Datos de entrada invalidos o cuerpo ilegible",
                     content = @Content(mediaType = "application/problem+json",
                             schema = @Schema(implementation = ProblemDetail.class))),
             @ApiResponse(responseCode = "404", description = "No existe una actividad con ese id",
                     content = @Content(mediaType = "application/problem+json",
                             schema = @Schema(implementation = ProblemDetail.class)))
     })
-    public ResponseEntity<EntityModel<ActivityResponse>> update(
+    public ResponseEntity<ActivityResponse> update(
             @Parameter(description = "Identificador de la actividad", example = "1")
             @PathVariable Long id,
             @Valid @RequestBody ActivityRequest request,
             @Parameter(description = "Usuario que ejecuta la operacion", example = "jeriasco")
             @RequestHeader(value = "X-User", required = false) String user) {
 
-        return ResponseEntity.ok(assembler.toModel(activityService.update(id, request, user)));
+        return ResponseEntity.ok(ActivityResponse.from(activityService.update(id, request, user)));
     }
 
     @DeleteMapping("/{id}")

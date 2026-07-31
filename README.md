@@ -11,7 +11,6 @@ API REST para gestionar y analizar el comportamiento de un proyecto mediante la 
 | Java | 17 (Temurin 17.0.19+10) |
 | Spring Boot | 4.1.0 |
 | Base de datos | H2 en memoria + Spring Data JPA |
-| Hipermedia | Spring HATEOAS |
 | Documentación | springdoc-openapi 3.0.3 (Swagger UI) |
 | Cobertura | JaCoCo 0.8.15, umbral mínimo del 82 % |
 
@@ -69,7 +68,9 @@ Los campos de usuario se toman de la cabecera opcional **`X-User`**; si no se en
 
 ## Endpoints
 
-La API cumple el **nivel 3 del Modelo de Madurez de Richardson**: recursos con URIs propias, verbos HTTP con semántica correcta, códigos de estado significativos y enlaces hipermedia (`_links`) en cada representación.
+La API se sitúa en el **nivel 2 del Modelo de Madurez de Richardson**: recursos con URIs propias, verbos HTTP con semántica correcta y códigos de estado significativos.
+
+Las respuestas son **JSON plano**: los recursos individuales son objetos y las colecciones son arrays, sin envoltorios `_embedded` ni enlaces `_links`.
 
 | Método | Ruta | Descripción | Respuestas |
 |---|---|---|---|
@@ -154,11 +155,6 @@ curl http://localhost:8080/api/v1/activities/1/interpretation
 
 ```json
 {
-  "_links": {
-    "self":       { "href": "http://localhost:8080/api/v1/activities/1/interpretation" },
-    "indicators": { "href": "http://localhost:8080/api/v1/activities/1/indicators" },
-    "activity":   { "href": "http://localhost:8080/api/v1/activities/1" }
-  },
   "activityId": 1,
   "activityName": "Cimentacion",
   "cpi": 1.2000,
@@ -179,7 +175,7 @@ curl http://localhost:8080/api/v1/activities/1/interpretation
 
 - `IndicatorServiceTest` — las ocho fórmulas, divisiones por cero y los tres bloques de interpretación, incluidos los casos de igualdad a 1
 - `ActivityServiceTest` — CRUD con Mockito, entidad no encontrada y sellado de auditoría
-- `ActivityControllerTest` / `IndicatorControllerTest` — slices `@WebMvcTest`: códigos de estado, forma del JSON, presencia de `_links` y errores de validación
+- `ActivityControllerTest` / `IndicatorControllerTest` — slices `@WebMvcTest`: códigos de estado, forma del JSON (objeto plano o array, sin envoltorios) y errores de validación
 - `GlobalExceptionHandlerTest` — los cinco tipos de `ProblemDetail`
 - `ActivityTest` — callbacks `@PrePersist` / `@PreUpdate` e identidad de la entidad
 - `MsIndicatorEvApplicationTests` — extremo a extremo con servidor real y H2
